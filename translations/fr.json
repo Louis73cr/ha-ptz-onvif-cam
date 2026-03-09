@@ -1,0 +1,22 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurer la caméra PTZ",
+        "description": "Entrez les informations de connexion de votre caméra ONVIF.",
+        "data": {
+          "camera_name": "Nom de la caméra",
+          "camera_model": "Modèle de la caméra",
+          "host": "Adresse IP",
+          "port": "Port",
+          "username": "Identifiant",
+          "password": "Mot de passe",
+          "profile_token": "Profile Token (laisser par défaut)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossible de se connecter à la caméra. Vérifiez l'IP, le port et les identifiants."
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "domain": "onvif_ptz",
+  "name": "ONVIF PTZ Control",
+  "codeowners": [],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/your-repo/onvif_ptz",
+  "iot_class": "local_polling",
+  "requirements": ["requests>=2.28.0"],
+  "version": "1.0.0"
+}

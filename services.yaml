@@ -1,0 +1,56 @@
+goto_preset:
+  name: Aller au preset
+  description: Déplace la caméra vers un preset enregistré.
+  fields:
+    entry_id:
+      name: ID de l'entrée
+      description: L'ID de l'entrée de configuration de la caméra.
+      required: true
+      selector:
+        text:
+    preset_token:
+      name: Token du preset
+      description: Le token du preset vers lequel se déplacer (ex. 1, 2, 3...).
+      required: true
+      selector:
+        text:
+
+set_preset:
+  name: Enregistrer un preset
+  description: Enregistre la position actuelle comme preset.
+  fields:
+    entry_id:
+      name: ID de l'entrée
+      description: L'ID de l'entrée de configuration de la caméra.
+      required: true
+      selector:
+        text:
+    preset_name:
+      name: Nom du preset
+      description: Le nom à donner au preset.
+      required: true
+      selector:
+        text:
+    preset_token:
+      name: Token du preset
+      description: Token optionnel pour écraser un preset existant.
+      required: false
+      selector:
+        text:
+
+remove_preset:
+  name: Supprimer un preset
+  description: Supprime un preset enregistré.
+  fields:
+    entry_id:
+      name: ID de l'entrée
+      description: L'ID de l'entrée de configuration de la caméra.
+      required: true
+      selector:
+        text:
+    preset_token:
+      name: Token du preset
+      description: Le token du preset à supprimer.
+      required: true
+      selector:
+        text:
