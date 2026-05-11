@@ -45,14 +45,16 @@ ZOOM_ACTIONS = [
     {"key": "zoom_out", "name": "Zoom -", "speed": -ZOOM_SPEED, "icon": "mdi:magnify-minus"},
 ]
 
+DEFAULT_PRESET_NAMES = ["Entrée", "Garage", "Jardin"]
+
 
 def _get_presets(entry: ConfigEntry) -> list[dict]:
     """Get presets from entry data."""
     presets = []
     preset_names = [
-        entry.data.get(CONF_PRESET_1, ""),
-        entry.data.get(CONF_PRESET_2, ""),
-        entry.data.get(CONF_PRESET_3, ""),
+    entry.options.get(CONF_PRESET_1, entry.data.get(CONF_PRESET_1, DEFAULT_PRESET_NAMES[0])),
+    entry.options.get(CONF_PRESET_2, entry.data.get(CONF_PRESET_2, DEFAULT_PRESET_NAMES[1])),
+    entry.options.get(CONF_PRESET_3, entry.data.get(CONF_PRESET_3, DEFAULT_PRESET_NAMES[2])),
     ]
     for idx, name in enumerate(preset_names, start=1):
         name = name.strip()
@@ -188,12 +190,12 @@ class OnvifPtzZoomButton(ButtonEntity):
         soap_zoom = f"""<?xml version="1.0"?>
 <Envelope xmlns="http://www.w3.org/2003/05/soap-envelope">
   <Body>
-    <ContinuousZoom xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+    <ContinuousMove xmlns="http://www.onvif.org/ver20/ptz/wsdl">
       <ProfileToken>{token}</ProfileToken>
-      <Zoom>
-        <x>{zoom_speed}</x>
-      </Zoom>
-    </ContinuousZoom>
+      <Velocity>
+        <Zoom x="{zoom_speed}" xmlns="http://www.onvif.org/ver10/schema"/>
+      </Velocity>
+    </ContinuousMove>
   </Body>
 </Envelope>"""
 

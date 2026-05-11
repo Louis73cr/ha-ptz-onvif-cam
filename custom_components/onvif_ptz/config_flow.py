@@ -24,6 +24,9 @@ from .const import (
     CAMERA_MODELS,
     DEFAULT_PORT,
     DEFAULT_PROFILE_TOKEN,
+    DEFAULT_PRESET_1,
+    DEFAULT_PRESET_2,
+    DEFAULT_PRESET_3,
 )
 
 MODEL_OPTIONS = {key: info["name"] for key, info in CAMERA_MODELS.items()}
@@ -37,9 +40,9 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_USERNAME, default="admin"): str,
         vol.Required(CONF_PASSWORD): str,
         vol.Optional(CONF_PROFILE_TOKEN, default=DEFAULT_PROFILE_TOKEN): str,
-        vol.Optional(CONF_PRESET_1, default=""): str,
-        vol.Optional(CONF_PRESET_2, default=""): str,
-        vol.Optional(CONF_PRESET_3, default=""): str,
+        vol.Optional(CONF_PRESET_1, default=DEFAULT_PRESET_1): str,
+        vol.Optional(CONF_PRESET_2, default=DEFAULT_PRESET_2): str,
+        vol.Optional(CONF_PRESET_3, default=DEFAULT_PRESET_3): str,
     }
 )
 
@@ -105,3 +108,50 @@ class OnvifPtzConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             data_schema=DATA_SCHEMA,
             errors=errors,
         )
+
+
+class OnvifPtzOptionsFlowHandler(config_entries.OptionsFlow):
+    """Handle options for ONVIF PTZ."""
+
+    def __init__(self, entry: config_entries.ConfigEntry) -> None:
+        self._entry = entry
+
+    async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
+        """Manage options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        options_schema = vol.Schema(
+            {
+                vol.Optional(
+                    CONF_PRESET_1,
+                    default=self._entry.options.get(
+                        CONF_PRESET_1,
+                        self._entry.data.get(CONF_PRESET_1, DEFAULT_PRESET_1),
+                    ),
+                ): str,
+                vol.Optional(
+                    CONF_PRESET_2,
+                    default=self._entry.options.get(
+                        CONF_PRESET_2,
+                        self._entry.data.get(CONF_PRESET_2, DEFAULT_PRESET_2),
+                    ),
+                ): str,
+                vol.Optional(
+                    CONF_PRESET_3,
+                    default=self._entry.options.get(
+                        CONF_PRESET_3,
+                        self._entry.data.get(CONF_PRESET_3, DEFAULT_PRESET_3),
+                    ),
+                ): str,
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=options_schema)
+
+
+async def async_get_options_flow(
+    config_entry: config_entries.ConfigEntry,
+) -> OnvifPtzOptionsFlowHandler:
+    """Return the options flow handler."""
+    return OnvifPtzOptionsFlowHandler(config_entry)
