@@ -21,9 +21,14 @@ from .const import (
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_PROFILE_TOKEN,
+    CONF_PRESET_1,
+    CONF_PRESET_2,
+    CONF_PRESET_3,
     CAMERA_MODELS,
     PTZ_SPEED,
     PTZ_DURATION,
+    ZOOM_SPEED,
+    ZOOM_DURATION,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,6 +40,26 @@ PTZ_DIRECTIONS = [
     {"key": "down", "name": "Bas", "x": 0, "y": -PTZ_SPEED, "icon": "mdi:pan-down"},
 ]
 
+ZOOM_ACTIONS = [
+    {"key": "zoom_in", "name": "Zoom +", "speed": ZOOM_SPEED, "icon": "mdi:magnify-plus"},
+    {"key": "zoom_out", "name": "Zoom -", "speed": -ZOOM_SPEED, "icon": "mdi:magnify-minus"},
+]
+
+
+def _get_presets(entry: ConfigEntry) -> list[dict]:
+    """Get presets from entry data."""
+    presets = []
+    preset_names = [
+        entry.data.get(CONF_PRESET_1, ""),
+        entry.data.get(CONF_PRESET_2, ""),
+        entry.data.get(CONF_PRESET_3, ""),
+    ]
+    for idx, name in enumerate(preset_names, start=1):
+        name = name.strip()
+        if name:
+            presets.append({"number": idx, "name": name})
+    return presets
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
@@ -45,6 +70,15 @@ async def async_setup_entry(
     entities = [
         OnvifPtzButton(entry, direction) for direction in PTZ_DIRECTIONS
     ]
+    # Ajouter les boutons de zoom
+    entities.extend([
+        OnvifPtzZoomButton(entry, zoom_action) for zoom_action in ZOOM_ACTIONS
+    ])
+    # Ajouter les boutons de preset
+    presets = _get_presets(entry)
+    entities.extend([
+        OnvifPtzPresetButton(entry, preset) for preset in presets
+    ])
     async_add_entities(entities)
 
 
@@ -115,3 +149,129 @@ class OnvifPtzButton(ButtonEntity):
     async def async_press(self) -> None:
         """Handle the button press."""
         await self.hass.async_add_executor_job(self._send_ptz)
+
+
+class OnvifPtzZoomButton(ButtonEntity):
+    """A button that triggers a PTZ zoom action."""
+
+    def __init__(self, entry: ConfigEntry, zoom_action: dict) -> None:
+        """Initialize the PTZ zoom button."""
+        camera_name = entry.data[CONF_CAMERA_NAME]
+        self._entry = entry
+        self._zoom_action = zoom_action
+        self._attr_name = f"{camera_name} {zoom_action['name']}"
+        self._attr_unique_id = f"{entry.entry_id}_zoom_{zoom_action['key']}"
+        self._attr_icon = zoom_action["icon"]
+        model_key = entry.data.get(CONF_CAMERA_MODEL, "")
+        model_info = CAMERA_MODELS.get(model_key, {})
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": camera_name,
+            "manufacturer": model_info.get("manufacturer", "ONVIF"),
+            "model": model_info.get("model", "PTZ Camera"),
+        }
+
+    def _send_zoom(self) -> None:
+        """Send zoom move + stop commands (blocking)."""
+        data = self._entry.data
+        host = data[CONF_HOST]
+        port = data[CONF_PORT]
+        username = data[CONF_USERNAME]
+        password = data[CONF_PASSWORD]
+        token = data.get(CONF_PROFILE_TOKEN, "Profile000")
+        auth = HTTPDigestAuth(username, password)
+        url = f"http://{host}:{port}/onvif/ptz_service"
+        headers = {"Content-Type": "application/soap+xml"}
+
+        zoom_speed = self._zoom_action["speed"]
+
+        soap_zoom = f"""<?xml version="1.0"?>
+<Envelope xmlns="http://www.w3.org/2003/05/soap-envelope">
+  <Body>
+    <ContinuousZoom xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>{token}</ProfileToken>
+      <Zoom>
+        <x>{zoom_speed}</x>
+      </Zoom>
+    </ContinuousZoom>
+  </Body>
+</Envelope>"""
+
+        soap_stop = f"""<?xml version="1.0"?>
+<Envelope xmlns="http://www.w3.org/2003/05/soap-envelope">
+  <Body>
+    <Stop xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>{token}</ProfileToken>
+      <Zoom>true</Zoom>
+    </Stop>
+  </Body>
+</Envelope>"""
+
+        try:
+            requests.post(url, data=soap_zoom, headers=headers, auth=auth, timeout=5)
+            time.sleep(ZOOM_DURATION)
+            requests.post(url, data=soap_stop, headers=headers, auth=auth, timeout=5)
+        except requests.RequestException as err:
+            _LOGGER.error("Zoom %s failed: %s", self._zoom_action["key"], err)
+
+    async def async_press(self) -> None:
+        """Handle the button press."""
+        await self.hass.async_add_executor_job(self._send_zoom)
+
+
+class OnvifPtzPresetButton(ButtonEntity):
+    """A button that triggers movement to a PTZ preset position."""
+
+    def __init__(self, entry: ConfigEntry, preset: dict) -> None:
+        """Initialize the PTZ preset button."""
+        camera_name = entry.data[CONF_CAMERA_NAME]
+        self._entry = entry
+        self._preset = preset
+        self._attr_name = f"{camera_name} {preset['name']}"
+        self._attr_unique_id = f"{entry.entry_id}_preset_{preset['number']}"
+        self._attr_icon = "mdi:camera-iris"
+        model_key = entry.data.get(CONF_CAMERA_MODEL, "")
+        model_info = CAMERA_MODELS.get(model_key, {})
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": camera_name,
+            "manufacturer": model_info.get("manufacturer", "ONVIF"),
+            "model": model_info.get("model", "PTZ Camera"),
+        }
+
+    def _goto_preset(self) -> None:
+        """Send the GotoPreset command (blocking)."""
+        data = self._entry.data
+        host = data[CONF_HOST]
+        port = data[CONF_PORT]
+        username = data[CONF_USERNAME]
+        password = data[CONF_PASSWORD]
+        token = data.get(CONF_PROFILE_TOKEN, "Profile000")
+        auth = HTTPDigestAuth(username, password)
+        url = f"http://{host}:{port}/onvif/ptz_service"
+        headers = {"Content-Type": "application/soap+xml"}
+
+        preset_number = self._preset["number"]
+
+        soap_goto = f"""<?xml version="1.0"?>
+<Envelope xmlns="http://www.w3.org/2003/05/soap-envelope">
+  <Body>
+    <GotoPreset xmlns="http://www.onvif.org/ver20/ptz/wsdl">
+      <ProfileToken>{token}</ProfileToken>
+      <PresetToken>Preset{preset_number}</PresetToken>
+      <Speed>
+        <PanTilt x="1" y="1" xmlns="http://www.onvif.org/ver10/schema"/>
+      </Speed>
+    </GotoPreset>
+  </Body>
+</Envelope>"""
+
+        try:
+            requests.post(url, data=soap_goto, headers=headers, auth=auth, timeout=5)
+            _LOGGER.info("Moved to preset %d", preset_number)
+        except requests.RequestException as err:
+            _LOGGER.error("Goto preset %d failed: %s", preset_number, err)
+
+    async def async_press(self) -> None:
+        """Handle the button press."""
+        await self.hass.async_add_executor_job(self._goto_preset)

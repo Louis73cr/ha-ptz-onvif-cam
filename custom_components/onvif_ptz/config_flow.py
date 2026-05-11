@@ -18,6 +18,9 @@ from .const import (
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_PROFILE_TOKEN,
+    CONF_PRESET_1,
+    CONF_PRESET_2,
+    CONF_PRESET_3,
     CAMERA_MODELS,
     DEFAULT_PORT,
     DEFAULT_PROFILE_TOKEN,
@@ -34,6 +37,9 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_USERNAME, default="admin"): str,
         vol.Required(CONF_PASSWORD): str,
         vol.Optional(CONF_PROFILE_TOKEN, default=DEFAULT_PROFILE_TOKEN): str,
+        vol.Optional(CONF_PRESET_1, default=""): str,
+        vol.Optional(CONF_PRESET_2, default=""): str,
+        vol.Optional(CONF_PRESET_3, default=""): str,
     }
 )
 
