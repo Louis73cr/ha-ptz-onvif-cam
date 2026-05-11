@@ -51,32 +51,32 @@ DEFAULT_PRESET_TOKENS = ["preset_1", "preset_2", "preset_3"]
 
 def _get_presets(entry: ConfigEntry) -> list[dict]:
     """Get presets from entry data."""
-  presets: list[dict] = []
-  preset_names = [
-    entry.options.get(
-      CONF_PRESET_1,
-      entry.data.get(CONF_PRESET_1, DEFAULT_PRESET_NAMES[0]),
-    ),
-    entry.options.get(
-      CONF_PRESET_2,
-      entry.data.get(CONF_PRESET_2, DEFAULT_PRESET_NAMES[1]),
-    ),
-    entry.options.get(
-      CONF_PRESET_3,
-      entry.data.get(CONF_PRESET_3, DEFAULT_PRESET_NAMES[2]),
-    ),
-  ]
-  for idx, name in enumerate(preset_names, start=1):
-    preset_name = name.strip()
-    if preset_name:
-      presets.append(
-        {
-          "number": idx,
-          "name": preset_name,
-          "token": DEFAULT_PRESET_TOKENS[idx - 1],
-        }
-      )
-  return presets
+    presets: list[dict] = []
+    preset_names = [
+        entry.options.get(
+            CONF_PRESET_1,
+            entry.data.get(CONF_PRESET_1, DEFAULT_PRESET_NAMES[0]),
+        ),
+        entry.options.get(
+            CONF_PRESET_2,
+            entry.data.get(CONF_PRESET_2, DEFAULT_PRESET_NAMES[1]),
+        ),
+        entry.options.get(
+            CONF_PRESET_3,
+            entry.data.get(CONF_PRESET_3, DEFAULT_PRESET_NAMES[2]),
+        ),
+    ]
+    for idx, name in enumerate(preset_names, start=1):
+        preset_name = name.strip()
+        if preset_name:
+            presets.append(
+                {
+                    "number": idx,
+                    "name": preset_name,
+                    "token": DEFAULT_PRESET_TOKENS[idx - 1],
+                }
+            )
+    return presets
 
 
 async def async_setup_entry(
@@ -95,7 +95,7 @@ async def async_setup_entry(
     # Ajouter les boutons de preset
     presets = _get_presets(entry)
     entities.extend([
-      OnvifPtzSavePresetButton(entry, preset) for preset in presets
+        OnvifPtzSavePresetButton(entry, preset) for preset in presets
     ])
     entities.extend([
         OnvifPtzPresetButton(entry, preset) for preset in presets
@@ -240,38 +240,38 @@ class OnvifPtzZoomButton(ButtonEntity):
         await self.hass.async_add_executor_job(self._send_zoom)
 
 
-  class OnvifPtzSavePresetButton(ButtonEntity):
+class OnvifPtzSavePresetButton(ButtonEntity):
     """A button that saves the current position as a PTZ preset."""
 
     def __init__(self, entry: ConfigEntry, preset: dict) -> None:
-      """Initialize the save-preset button."""
-      camera_name = entry.data[CONF_CAMERA_NAME]
-      self._entry = entry
-      self._preset = preset
-      self._attr_name = f"{camera_name} Définir {preset['name']}"
-      self._attr_unique_id = f"{entry.entry_id}_preset_save_{preset['number']}"
-      self._attr_icon = "mdi:bookmark-plus-outline"
-      model_key = entry.data.get(CONF_CAMERA_MODEL, "")
-      model_info = CAMERA_MODELS.get(model_key, {})
-      self._attr_device_info = {
-        "identifiers": {(DOMAIN, entry.entry_id)},
-        "name": camera_name,
-        "manufacturer": model_info.get("manufacturer", "ONVIF"),
-        "model": model_info.get("model", "PTZ Camera"),
-      }
+        """Initialize the save-preset button."""
+        camera_name = entry.data[CONF_CAMERA_NAME]
+        self._entry = entry
+        self._preset = preset
+        self._attr_name = f"{camera_name} Définir {preset['name']}"
+        self._attr_unique_id = f"{entry.entry_id}_preset_save_{preset['number']}"
+        self._attr_icon = "mdi:bookmark-plus-outline"
+        model_key = entry.data.get(CONF_CAMERA_MODEL, "")
+        model_info = CAMERA_MODELS.get(model_key, {})
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, entry.entry_id)},
+            "name": camera_name,
+            "manufacturer": model_info.get("manufacturer", "ONVIF"),
+            "model": model_info.get("model", "PTZ Camera"),
+        }
 
     async def async_press(self) -> None:
-      """Handle the button press."""
-      await self.hass.services.async_call(
-        DOMAIN,
-        "set_preset",
-        {
-          "entry_id": self._entry.entry_id,
-          "preset_name": self._preset["name"],
-          "preset_token": self._preset["token"],
-        },
-        blocking=True,
-      )
+        """Handle the button press."""
+        await self.hass.services.async_call(
+            DOMAIN,
+            "set_preset",
+            {
+                "entry_id": self._entry.entry_id,
+                "preset_name": self._preset["name"],
+                "preset_token": self._preset["token"],
+            },
+            blocking=True,
+        )
 
 
 class OnvifPtzPresetButton(ButtonEntity):
