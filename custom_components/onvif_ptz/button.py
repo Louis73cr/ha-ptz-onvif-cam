@@ -51,17 +51,32 @@ DEFAULT_PRESET_TOKENS = ["preset_1", "preset_2", "preset_3"]
 
 def _get_presets(entry: ConfigEntry) -> list[dict]:
     """Get presets from entry data."""
-    presets = []
-    preset_names = [
-        entry.options.get(CONF_PRESET_1, entry.data.get(CONF_PRESET_1, DEFAULT_PRESET_NAMES[0])),
-        entry.options.get(CONF_PRESET_2, entry.data.get(CONF_PRESET_2, DEFAULT_PRESET_NAMES[1])),
-        entry.options.get(CONF_PRESET_3, entry.data.get(CONF_PRESET_3, DEFAULT_PRESET_NAMES[2])),
-    ]
-    for idx, name in enumerate(preset_names, start=1):
-        name = name.strip()
-        if name:
-            presets.append({"number": idx, "name": name, "token": DEFAULT_PRESET_TOKENS[idx - 1]})
-    return presets
+  presets: list[dict] = []
+  preset_names = [
+    entry.options.get(
+      CONF_PRESET_1,
+      entry.data.get(CONF_PRESET_1, DEFAULT_PRESET_NAMES[0]),
+    ),
+    entry.options.get(
+      CONF_PRESET_2,
+      entry.data.get(CONF_PRESET_2, DEFAULT_PRESET_NAMES[1]),
+    ),
+    entry.options.get(
+      CONF_PRESET_3,
+      entry.data.get(CONF_PRESET_3, DEFAULT_PRESET_NAMES[2]),
+    ),
+  ]
+  for idx, name in enumerate(preset_names, start=1):
+    preset_name = name.strip()
+    if preset_name:
+      presets.append(
+        {
+          "number": idx,
+          "name": preset_name,
+          "token": DEFAULT_PRESET_TOKENS[idx - 1],
+        }
+      )
+  return presets
 
 
 async def async_setup_entry(
